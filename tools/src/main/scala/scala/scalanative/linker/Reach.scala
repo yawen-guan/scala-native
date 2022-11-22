@@ -810,8 +810,9 @@ class Reach(
       reachType(ty)
       reachVal(v)
 
-    case Op.Classalloc(n) =>
+    case Op.Classalloc(n, ptrv) =>
       classInfo(n).foreach(reachAllocation)
+      reachVal(ptrv)
     case Op.Fieldload(ty, v, n) =>
       reachType(ty)
       reachVal(v)

@@ -3,9 +3,20 @@ package scala.scalanative.safe
 import scalanative.unsigned._
 import scala.annotation.implicitNotFound
 import scala.scalanative.unsafe.Tag
+import scala.scalanative.runtime.{
+  Intrinsics,
+  RawPtr,
+  CMemoryPool,
+  CMemoryPoolZone
+}
 
+/** SafeZone can not be a trait because method `alloc` should be an inline
+ *  function (it calls Intrinsics functions).
+ */
 @implicitNotFound("Given method requires an implicit zone.")
-trait SafeZone {
+class SafeZone private (private[this] val zoneHandle: RawPtr) {
+
+  private[this] var flagIsOpen = true
 
   /** Return an object of type T allocated in zone. T can be primitive types,
    *  struct, class.
@@ -24,16 +35,29 @@ trait SafeZone {
    *  Currently it's a mock interface which doesn't accept constructor
    *  parameters.
    */
-  // def alloc[T]()(using tag: Tag[T]): T
+  inline def alloc[T](): T = {
+    checkOpen()
+    Intrinsics.zonealloc[T](zoneHandle).asInstanceOf[T]
+  }
 
   /** Frees allocations. This zone allocator is not reusable once closed. */
-  def close(): Unit
+  def close(): Unit = {
+    checkOpen()
+    flagIsOpen = false
+    CMemoryPoolZone.close(zoneHandle)
+    CMemoryPoolZone.free(zoneHandle)
+  }
 
   /** Return this zone allocator is open or not. */
-  def isOpen: Boolean = !isClosed
+  def isOpen: Boolean = flagIsOpen
 
   /** Return this zone allocator is closed or not. */
-  def isClosed: Boolean
+  def isClosed: Boolean = !isOpen
+
+  protected def checkOpen(): Unit = {
+    if (!isOpen)
+      throw new IllegalStateException(s"Zone ${this} is already closed.")
+  }
 }
 
 object SafeZone {
@@ -45,6 +69,9 @@ object SafeZone {
     finally safeZone.close()
   }
 
-  final def open(): SafeZone =
-    MemoryPoolSafeZone.open(MemoryPool.defaultMemoryPoolHandle)
+  // TODO: free the default memory pool.
+  final def open(): SafeZone = new SafeZone(
+    CMemoryPoolZone.open(CMemoryPool.defaultMemoryPoolHandle)
+  )
+
 }

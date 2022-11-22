@@ -395,7 +395,7 @@ trait NirGenExpr(using Context) {
       }
 
       def allocateClosure() = {
-        val alloc = buf.classalloc(anonClassName, unwind)
+        val alloc = buf.classalloc(anonClassName, Val.Null, unwind)
         val captures = allCaptureValues.map(genExpr)
         buf.call(
           ctorTy,
@@ -900,11 +900,22 @@ trait NirGenExpr(using Context) {
       given nir.Position = tree.span
       val TypeApply(fun @ Select(receiverp, _), targs) = tree: @unchecked
 
+      val value = receiverp match {
+        case Apply(rfun, rargs)
+            if rfun.symbol == defnNir.Intrinsics_zoneallocType =>
+          genExpr(
+            Apply(
+              ref(defnNir.Intrinsics_zonealloc),
+              Literal(Constant(targs.head.tpe.finalResultType)) :: rargs
+            )
+          )
+        case _ => genExpr(receiverp)
+      }
+
       val funSym = fun.symbol
       val fromty = genType(receiverp.tpe)
       val toty = genType(targs.head.tpe)
       def boxty = genBoxType(targs.head.tpe)
-      val value = genExpr(receiverp)
       def boxed = boxValue(receiverp.tpe, value)(using receiverp.span)
 
       if (funSym == defn.Any_isInstanceOf) buf.is(boxty, boxed, unwind)
@@ -1027,6 +1038,7 @@ trait NirGenExpr(using Context) {
       else if (code == CFUNCPTR_APPLY) genCFuncPtrApply(app)
       else if (code == CFUNCPTR_FROM_FUNCTION) genCFuncFromScalaFunction(app)
       else if (code == STACKALLOC) genStackalloc(app)
+      else if (code == ZONEALLOC) genZonealloc(app)
       else if (code == CQUOTE) genCQuoteOp(app)
       else if (code == CLASS_FIELD_RAWPTR) genClassFieldRawPtr(app)
       else if (code == SIZE_OF) genSizeOf(app)
@@ -1097,7 +1109,7 @@ trait NirGenExpr(using Context) {
     private def genApplyNew(clssym: Symbol, ctorsym: Symbol, args: List[Tree])(
         using nir.Position
     ): Val = {
-      val alloc = buf.classalloc(genTypeName(clssym), unwind)
+      val alloc = buf.classalloc(genTypeName(clssym), Val.Null, unwind)
       val call = genApplyMethod(ctorsym, statically = true, alloc, args)
       alloc
     }
@@ -1119,6 +1131,12 @@ trait NirGenExpr(using Context) {
         selfp: Tree,
         argsp: Seq[Tree]
     )(using nir.Position): Val = {
+
+      // println(s"\n[debug/nscplugin/NirGenExpr] genApplyMethod")
+      // println(s"sym = $sym")
+      // println(s"selfp = $selfp")
+      // println(s"argsp = $argsp")
+
       if (sym.isExtern && sym.is(Accessor)) genApplyExternAccessor(sym, argsp)
       else if (sym.isStaticInNIR && !sym.isExtern)
         genApplyStaticMethod(sym, selfp.symbol, argsp)
@@ -1779,7 +1797,7 @@ trait NirGenExpr(using Context) {
           val ctorName = genMethodName(boxedClass.primaryConstructor)
           val ctorSig = genMethodSig(boxedClass.primaryConstructor)
 
-          val alloc = buf.classalloc(genTypeName(boxedClass), unwind)
+          val alloc = buf.classalloc(genTypeName(boxedClass), Val.Null, unwind)
           val ctor = buf.method(
             alloc,
             ctorName.asInstanceOf[nir.Global.Member].sig,
@@ -2085,6 +2103,23 @@ trait NirGenExpr(using Context) {
       buf.stackalloc(nir.Type.Byte, unboxed, unwind)(using app.span)
     }
 
+    private def genZonealloc(app: Apply): Val = {
+      given nir.Position = app.span
+      val Apply(fun, Seq(Literal(Constant(tpe)), zoneHandlep)) = app
+
+      tpe match {
+        case tpe @ TypeRef(_, desig) =>
+          val name = genTypeName(desig.asInstanceOf[ClassSymbol])
+          val zoneHandle = genExpr(zoneHandlep)
+          val alloc = buf.classalloc(name, zoneHandle, unwind)
+          val ctorsym = Select(New(TypeTree(tpe)), nme.CONSTRUCTOR).symbol
+          val call =
+            genApplyMethod(ctorsym, statically = true, alloc, List.empty)
+          alloc
+        case _ => Val.Null
+      }
+    }
+
     def genCQuoteOp(app: Apply): Val = {
       app match {
         // case q"""
@@ -2325,7 +2360,7 @@ trait NirGenExpr(using Context) {
       val ctorName = className.member(Sig.Ctor(Seq(Type.Ptr)))
       val rawptr = buf.method(fnRef, ExternForwarderSig, unwind)
 
-      val alloc = buf.classalloc(className, unwind)
+      val alloc = buf.classalloc(className, Val.Null, unwind)
       buf.call(
         ctorTy,
         Val.Global(ctorName, Type.Ptr),

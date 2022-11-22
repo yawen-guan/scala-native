@@ -1,39 +1,47 @@
-package scala.scalanative.safe
+// package scala.scalanative.safe
 
-import scalanative.runtime.{CMemoryPool, CMemoryPoolZone, RawPtr}
+// import scalanative.runtime.{CMemoryPool, CMemoryPoolZone, RawPtr, Intrinsics}
 
-object MemoryPool {
-  lazy val defaultMemoryPoolHandle = CMemoryPool.open()
+// object MemoryPool {
+//   lazy val defaultMemoryPoolHandle = CMemoryPool.open()
 
-  // TODO: free the default memory pool.
-  def freeDefaultMemoryPool(): Unit = {
-    CMemoryPool.free(defaultMemoryPoolHandle)
-  }
-}
+//   // TODO: free the default memory pool.
+//   def freeDefaultMemoryPool(): Unit = {
+//     CMemoryPool.free(defaultMemoryPoolHandle)
+//   }
+// }
 
-final class MemoryPoolSafeZone(private[this] val poolHandle: RawPtr)
-    extends SafeZone {
+// final class MemoryPoolSafeZone(private[this] val poolHandle: RawPtr)
+//     extends SafeZone {
 
-  private[this] lazy val zoneHandle = CMemoryPoolZone.open(poolHandle)
-  private[this] var flagIsOpen = true
+//   private[this] val zoneHandle = CMemoryPoolZone.open(poolHandle)
+//   private[this] var flagIsOpen = true
 
-  private def checkOpen(): Unit =
-    if (!isOpen)
-      throw new IllegalStateException("Zone {this} is already closed.")
+//   private def checkOpen(): Unit =
+//     if (!isOpen)
+//       throw new IllegalStateException(s"Zone ${this} is already closed.")
 
-  override def close(): Unit = {
-    checkOpen()
+//   override inline def alloc[T](): T = {
+//     checkOpen()
 
-    flagIsOpen = false
-    CMemoryPoolZone.close(zoneHandle)
-    CMemoryPoolZone.free(zoneHandle)
-  }
-  override def isOpen: Boolean = flagIsOpen
-  override def isClosed: Boolean = !isOpen
-}
+//     Intrinsics.zonealloc(zoneHandle).asInstanceOf[T]
+//   }
 
-object MemoryPoolSafeZone {
-  def open(poolHandle: RawPtr): MemoryPoolSafeZone = {
-    new MemoryPoolSafeZone(poolHandle)
-  }
-}
+//   override def close(): Unit = {
+//     checkOpen()
+
+//     flagIsOpen = false
+//     CMemoryPoolZone.close(zoneHandle)
+//     CMemoryPoolZone.free(zoneHandle)
+//   }
+//   override def isOpen: Boolean = flagIsOpen
+//   override def isClosed: Boolean = !isOpen
+
+//   override def getZoneHandle: RawPtr = zoneHandle
+// }
+
+// object MemoryPoolSafeZone {
+//   def open(poolHandle: RawPtr): MemoryPoolSafeZone = {
+//     new MemoryPoolSafeZone(poolHandle)
+//   }
+// }

@@ -87,8 +87,10 @@ class Buffer(implicit fresh: Fresh) {
       pos: Position
   ): Val =
     let(Op.Conv(conv, ty, value), unwind)
-  def classalloc(name: Global, unwind: Next)(implicit pos: Position): Val =
-    let(Op.Classalloc(name), unwind)
+  def classalloc(name: Global, ptr: Val, unwind: Next)(implicit
+      pos: Position
+  ): Val =
+    let(Op.Classalloc(name, ptr), unwind)
   def fieldload(ty: Type, obj: Val, name: Global, unwind: Next)(implicit
       pos: Position
   ): Val =

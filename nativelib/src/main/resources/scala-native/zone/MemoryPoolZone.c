@@ -72,9 +72,6 @@ void *memorypoolzone_alloc(void *_zone, void *info, size_t size) {
     size_t current_offset = zone->head_page->offset;
     size_t padded_offset = pad(current_offset, 8);
 
-    // printf("in zone_alloc: current_offset = %zx, padded_offset = %zx\n",
-    //        current_offset, padded_offset);
-
     size_t res_offset = 0;
     if (padded_offset + size <= MEMORYPOOL_PAGE_SIZE) {
         res_offset = padded_offset;
@@ -86,8 +83,6 @@ void *memorypoolzone_alloc(void *_zone, void *info, size_t size) {
     }
     zone->head_page->offset = res_offset + size;
     void **alloc = (void **)(zone->head_page->start + res_offset);
-    // printf("in zone_alloc: before *alloc = info\n");
-    // *alloc = info;
-    // printf("in zone_alloc: after *alloc = info\n");
+    *alloc = info;
     return alloc;
 }

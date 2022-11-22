@@ -9,6 +9,16 @@ object Intrinsics {
   /** Intrinsified stack allocation of n bytes. */
   def stackalloc(size: USize): RawPtr = intrinsic
 
+  /** Intrinsified creating an object of given type in the given zone (including
+   *  allocation and initialization)
+   */
+  def zonealloc[T](zoneHandle: RawPtr): T = intrinsic
+
+  /** Intrinsified creating an object of given type in the given zone (including
+   *  allocation and initialization)
+   */
+  def zonealloc(cls: Class[_], zoneHandle: RawPtr): Object = intrinsic
+
   /** Intrinsified unsigned devision on ints. */
   def divUInt(l: Int, r: Int): Int = intrinsic
 

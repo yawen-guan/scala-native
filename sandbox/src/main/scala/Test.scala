@@ -1,10 +1,9 @@
-import scala.scalanative.safe.SafeZone
-import scala.scalanative.runtime.RawPtr
+import scala.scalanative.safe._
 
 object Test {
   def main(args: Array[String]): Unit = {
     println("Hello, World!")
-    TestNew.test()
+    // TestNew.test()
     TestSafeZone.test()
   }
 }
