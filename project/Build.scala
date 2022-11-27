@@ -442,11 +442,15 @@ object Build {
   lazy val sandbox =
     MultiScalaProject("sandbox", file("sandbox"))
       .enablePlugins(MyScalaNativePlugin)
-      .settings(nativeConfig ~= { c =>
-        c.withLTO(LTO.default)
-          .withMode(Mode.default)
-          .withGC(GC.default)
-      })
+      .settings(
+        nativeConfig ~= { c =>
+          c.withLTO(LTO.default)
+            .withMode(Mode.default)
+            .withGC(GC.default)
+        },
+        // TODO: delete Xprint options
+        scalacOptions += "-Xprint:parser,posttyper,scalanative-prepareInterop,inlining,scalanative-genNIR"
+      )
       .withNativeCompilerPlugin
       .withJUnitPlugin
       .dependsOn(scalalib, testInterface % "test")
