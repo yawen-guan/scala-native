@@ -126,7 +126,7 @@ object Op {
   final case class Conv(conv: nir.Conv, ty: Type, value: Val) extends Op
 
   // high-level
-  final case class Classalloc(name: Global, ptr: Val) extends Op
+  final case class Classalloc(name: Global, zoneHandle: Val) extends Op
   final case class Fieldload(ty: Type, obj: Val, name: Global) extends Op
   final case class Fieldstore(ty: Type, obj: Val, name: Global, value: Val)
       extends Op

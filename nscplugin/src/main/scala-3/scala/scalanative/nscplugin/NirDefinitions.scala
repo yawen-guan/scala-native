@@ -221,9 +221,6 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val Intrinsics_castIntToRawSizeUnsignedR = IntrinsicsModule.requiredMethodRef("castIntToRawSizeUnsigned")
   @tu lazy val Intrinsics_castLongToRawSizeR = IntrinsicsModule.requiredMethodRef("castLongToRawSize")
   @tu lazy val Intrinsics_stackallocR = IntrinsicsModule.requiredMethodRef("stackalloc")
-  @tu lazy val Intrinsics_zoneallocAlts = IntrinsicsModule.info.member(termName("zonealloc")).alternatives
-  @tu lazy val Intrinsics_zoneallocR = Intrinsics_zoneallocAlts.find(_.info.paramInfoss.flatten.size == 2).get
-  @tu lazy val Intrinsics_zoneallocTypeR = Intrinsics_zoneallocAlts.find(_.info.paramInfoss.flatten.size == 1).get
   @tu lazy val Intrinsics_classFieldRawPtrR = IntrinsicsModule.requiredMethodRef("classFieldRawPtr")
   @tu lazy val Intrinsics_sizeOfAlts = IntrinsicsModule.info.member(termName("sizeOf")).alternatives
   @tu lazy val Intrinsics_sizeOfR = Intrinsics_sizeOfAlts.find(_.info.paramInfoss.flatten.nonEmpty).get
@@ -282,8 +279,6 @@ final class NirDefinitions()(using ctx: Context) {
   def Intrinsics_castIntToRawSizeUnsigned(using Context) = Intrinsics_castIntToRawSizeUnsignedR.symbol
   def Intrinsics_castLongToRawSize(using Context) = Intrinsics_castLongToRawSizeR.symbol
   def Intrinsics_stackalloc(using Context) = Intrinsics_stackallocR.symbol
-  def Intrinsics_zonealloc(using Context) = Intrinsics_zoneallocR.symbol
-  def Intrinsics_zoneallocType(using Context) = Intrinsics_zoneallocTypeR.symbol
   def Intrinsics_classFieldRawPtr(using Context) = Intrinsics_classFieldRawPtrR.symbol
   def Intrinsics_sizeOf(using Context) = Intrinsics_sizeOfR.symbol
   def Intrinsics_sizeOfType(using Context) = Intrinsics_sizeOfTypeR.symbol

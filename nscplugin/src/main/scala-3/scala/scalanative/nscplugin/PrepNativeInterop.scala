@@ -4,7 +4,9 @@ import dotty.tools.dotc.plugins.PluginPhase
 import dotty.tools._
 import dotc._
 import dotc.ast.tpd._
+import dotc.cc.{EventuallyCapturingType, CaptureSet}
 import dotc.transform.SymUtils.setter
+import dotc.util.Property
 import core.Contexts._
 import core.Definitions
 import core.Names._
@@ -20,6 +22,8 @@ import NirGenUtil.ContextCached
  */
 object PrepNativeInterop {
   val name = "scalanative-prepareInterop"
+
+  val SafeZoneHandleInNew: Property.StickyKey[Tree] = Property.StickyKey[Tree]
 }
 
 class PrepNativeInterop extends PluginPhase {
@@ -34,6 +38,27 @@ class PrepNativeInterop extends PluginPhase {
   private def isTopLevelExtern(dd: ValOrDefDef)(using Context) = {
     dd.rhs.symbol == defnNir.UnsafePackage_extern &&
     dd.symbol.isWrappedToplevelDef
+  }
+
+  override def transformNew(tree: New)(using Context): Tree = {
+    // Extract safe zone handle from Annotated tree. 
+    def extractSafeZoneHandle(tpt: Tree): Option[Tree] = (tpt, tpt.tpe) match {
+      case (Annotated(_, Apply(_, List(handle))), tpe: AnnotatedType) 
+        if tpe.annot.symbol == defn.NativeSafeZoneHandleAnnot.clssym => Some(handle)
+      case (Annotated(nested: Annotated, _), _) => extractSafeZoneHandle(nested)
+      case _ => None
+    }
+
+    val New(tpt) = tree
+    tpt.tpe match {
+      case EventuallyCapturingType(_, _) =>
+        extractSafeZoneHandle(tpt) match {
+          case Some(handle) => tree.putAttachment(PrepNativeInterop.SafeZoneHandleInNew, handle)
+          case None =>
+        }
+      case _ =>
+    }
+    tree
   }
 
   override def transformTypeApply(tree: TypeApply)(using Context): Tree = {

@@ -900,21 +900,10 @@ trait NirGenExpr(using Context) {
       given nir.Position = tree.span
       val TypeApply(fun @ Select(receiverp, _), targs) = tree: @unchecked
 
-      val value = receiverp match {
-        case Apply(rfun, rargs)
-            if rfun.symbol == defnNir.Intrinsics_zoneallocType =>
-          genExpr(
-            Apply(
-              ref(defnNir.Intrinsics_zonealloc),
-              Literal(Constant(targs.head.tpe.finalResultType)) :: rargs
-            )
-          )
-        case _ => genExpr(receiverp)
-      }
-
       val funSym = fun.symbol
       val fromty = genType(receiverp.tpe)
       val toty = genType(targs.head.tpe)
+      val value = genExpr(receiverp)
       def boxty = genBoxType(targs.head.tpe)
       def boxed = boxValue(receiverp.tpe, value)(using receiverp.span)
 
@@ -1038,7 +1027,6 @@ trait NirGenExpr(using Context) {
       else if (code == CFUNCPTR_APPLY) genCFuncPtrApply(app)
       else if (code == CFUNCPTR_FROM_FUNCTION) genCFuncFromScalaFunction(app)
       else if (code == STACKALLOC) genStackalloc(app)
-      else if (code == ZONEALLOC) genZonealloc(app)
       else if (code == CQUOTE) genCQuoteOp(app)
       else if (code == CLASS_FIELD_RAWPTR) genClassFieldRawPtr(app)
       else if (code == SIZE_OF) genSizeOf(app)
@@ -1073,8 +1061,13 @@ trait NirGenExpr(using Context) {
     }
 
     private def genApplyNew(app: Apply): Val = {
-      val Apply(fun @ Select(New(tpt), nme.CONSTRUCTOR), args) = app: @unchecked
+      val Apply(fun @ Select(n @ New(tpt), nme.CONSTRUCTOR), args) = app: @unchecked
       given nir.Position = app.span
+
+      val zoneHandle =
+        if n.hasAttachment(PrepNativeInterop.SafeZoneHandleInNew) then
+          genExpr(n.getAttachment(PrepNativeInterop.SafeZoneHandleInNew).get)
+        else Val.Null
 
       fromType(tpt.tpe) match {
         case st if st.sym.isStruct =>
@@ -1087,7 +1080,7 @@ trait NirGenExpr(using Context) {
             "'new' call to non-constructor: " + ctor.name
           )
 
-          genApplyNew(cls, ctor, args)
+          genApplyNew(cls, ctor, args, zoneHandle)
 
         case SimpleType(sym, targs) =>
           unsupported(s"unexpected new: $sym with targs $targs")
@@ -1106,10 +1099,10 @@ trait NirGenExpr(using Context) {
       res
     }
 
-    private def genApplyNew(clssym: Symbol, ctorsym: Symbol, args: List[Tree])(
-        using nir.Position
+    private def genApplyNew(clssym: Symbol, ctorsym: Symbol, args: List[Tree], zoneHandle: Val)(
+      using nir.Position
     ): Val = {
-      val alloc = buf.classalloc(genTypeName(clssym), Val.Null, unwind)
+      val alloc = buf.classalloc(genTypeName(clssym), zoneHandle, unwind)
       val call = genApplyMethod(ctorsym, statically = true, alloc, args)
       alloc
     }
@@ -1131,12 +1124,6 @@ trait NirGenExpr(using Context) {
         selfp: Tree,
         argsp: Seq[Tree]
     )(using nir.Position): Val = {
-
-      // println(s"\n[debug/nscplugin/NirGenExpr] genApplyMethod")
-      // println(s"sym = $sym")
-      // println(s"selfp = $selfp")
-      // println(s"argsp = $argsp")
-
       if (sym.isExtern && sym.is(Accessor)) genApplyExternAccessor(sym, argsp)
       else if (sym.isStaticInNIR && !sym.isExtern)
         genApplyStaticMethod(sym, selfp.symbol, argsp)
@@ -2101,23 +2088,6 @@ trait NirGenExpr(using Context) {
       val unboxed = buf.unbox(size.ty, size, unwind)(using sizep.span)
 
       buf.stackalloc(nir.Type.Byte, unboxed, unwind)(using app.span)
-    }
-
-    private def genZonealloc(app: Apply): Val = {
-      given nir.Position = app.span
-      val Apply(fun, Seq(Literal(Constant(tpe)), zoneHandlep)) = app
-
-      tpe match {
-        case tpe @ TypeRef(_, desig) =>
-          val name = genTypeName(desig.asInstanceOf[ClassSymbol])
-          val zoneHandle = genExpr(zoneHandlep)
-          val alloc = buf.classalloc(name, zoneHandle, unwind)
-          val ctorsym = Select(New(TypeTree(tpe)), nme.CONSTRUCTOR).symbol
-          val call =
-            genApplyMethod(ctorsym, statically = true, alloc, List.empty)
-          alloc
-        case _ => Val.Null
-      }
     }
 
     def genCQuoteOp(app: Apply): Val = {

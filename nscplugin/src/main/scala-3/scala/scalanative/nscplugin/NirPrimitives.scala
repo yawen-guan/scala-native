@@ -22,9 +22,8 @@ object NirPrimitives {
 
   final val CQUOTE = 1 + ARRAY_CLONE
   final val STACKALLOC = 1 + CQUOTE
-  final val ZONEALLOC = 1 + STACKALLOC
 
-  final val DIV_UINT = 1 + ZONEALLOC
+  final val DIV_UINT = 1 + STACKALLOC
   final val DIV_ULONG = 1 + DIV_UINT
   final val REM_UINT = 1 + DIV_ULONG
   final val REM_ULONG = 1 + REM_UINT
@@ -149,7 +148,6 @@ class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
     addPrimitive(defn.Array_clone, ARRAY_CLONE)
     addPrimitive(defnNir.CQuote_c, CQUOTE)
     addPrimitive(defnNir.Intrinsics_stackalloc, STACKALLOC)
-    addPrimitive(defnNir.Intrinsics_zonealloc, ZONEALLOC)
     addPrimitive(defnNir.Intrinsics_divUInt, DIV_UINT)
     addPrimitive(defnNir.Intrinsics_divULong, DIV_ULONG)
     addPrimitive(defnNir.Intrinsics_remUInt, REM_UINT)
