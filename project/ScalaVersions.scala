@@ -21,6 +21,7 @@ object ScalaVersions {
   val scala213: String = crossScala213.last
   val scala3: String = "3.1.3"
   lazy val scala3Experimental = "3.3.0-RC1-bin-20221213-5929a50-NIGHTLY"
+  lazy val scala3Local = "3.3.0-RC1-bin-SNAPSHOT"
 
   val sbt10Version: String = "1.1.6" // minimum version
   val sbt10ScalaVersion: String = scala212

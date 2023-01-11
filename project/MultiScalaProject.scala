@@ -26,9 +26,14 @@ final case class MultiScalaProject private (
       Settings.experimentalScalaSources,
       scalacOptions += "-Ylightweight-lazy-vals"
     )
+  lazy val v3Local: Project = project(MultiScalaProject.scala3Local)
+    .settings(
+      Settings.experimentalScalaSources,
+      scalacOptions += "-Ylightweight-lazy-vals"
+    )
 
   override def componentProjects: Seq[Project] =
-    Seq( /*v2_11,*/ v2_12, v2_13, v3, v3Next)
+    Seq( /*v2_11,*/ v2_12, v2_13, v3, v3Next, v3Local)
 
   def mapBinaryVersions(
       mapping: String => Project => Project
@@ -119,6 +124,7 @@ object ScopedMultiScalaProject {
 
 object MultiScalaProject {
   private val scala3Next = "3-next"
+  private val scala3Local = "3-local"
   private def strictMapValues[K, U, V](v: Map[K, U])(f: U => V): Map[K, V] =
     v.map(v => (v._1, f(v._2)))
 
@@ -127,7 +133,8 @@ object MultiScalaProject {
     "2.12" -> ScalaVersions.crossScala212,
     "2.13" -> ScalaVersions.crossScala213,
     "3" -> ScalaVersions.crossScala3,
-    scala3Next -> Seq(ScalaVersions.scala3Experimental)
+    scala3Next -> Seq(ScalaVersions.scala3Experimental),
+    scala3Local -> Seq(ScalaVersions.scala3Local)
   )
 
   final val scalaVersions = Map[String, String](
@@ -135,7 +142,8 @@ object MultiScalaProject {
     "2.12" -> ScalaVersions.scala212,
     "2.13" -> ScalaVersions.scala213,
     "3" -> ScalaVersions.scala3,
-    scala3Next -> ScalaVersions.scala3Experimental
+    scala3Next -> ScalaVersions.scala3Experimental,
+    scala3Local -> ScalaVersions.scala3Local
   )
 
   private def projectID(id: String, major: String) =

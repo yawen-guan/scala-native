@@ -336,10 +336,11 @@ object Build {
               }
             }
           )
-        case version @ ("3" | "3-next") =>
+        case version @ ("3" | "3-next" | "3-local") =>
           val stdlibVersion = version match {
-            case "3"      => scala3libSourcesVersion
-            case "3-next" => ScalaVersions.scala3Experimental
+            case "3" => scala3libSourcesVersion
+            // 3-next and 3-local shares the same scalalib override
+            case "3-next" | "3-local" => ScalaVersions.scala3Experimental
           }
           _.settings(
             name := "scala3lib",
@@ -449,7 +450,7 @@ object Build {
             .withGC(GC.default)
         },
         // TODO: delete Xprint options
-        scalacOptions += "-Xprint:parser,posttyper,scalanative-prepareInterop,inlining,scalanative-genNIR"
+        scalacOptions += "-Xprint:parser,scalanative-prepareInterop,moveStatic,scalanative-genNIR"
       )
       .withNativeCompilerPlugin
       .withJUnitPlugin
