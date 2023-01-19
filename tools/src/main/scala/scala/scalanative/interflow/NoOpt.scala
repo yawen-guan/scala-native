@@ -124,8 +124,9 @@ trait NoOpt { self: Interflow =>
     case Op.Varstore(slot, value) =>
       noOptVal(slot)
       noOptVal(value)
-    case Op.Arrayalloc(_, init) =>
+    case Op.Arrayalloc(_, init, ptrv) =>
       noOptVal(init)
+      noOptVal(ptrv)
     case Op.Arrayload(_, arr, idx) =>
       noOptVal(arr)
       noOptVal(idx)

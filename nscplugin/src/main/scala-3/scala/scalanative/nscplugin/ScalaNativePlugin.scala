@@ -13,5 +13,5 @@ class ScalaNativePlugin extends StandardPlugin:
           config.copy(genStaticForwardersForNonTopLevelObjects = true)
         case (config, _) => config
       }
-    List(PrepNativeInterop(), GenNIR(genNirSettings))
+    List(PrepNativeInterop(), Preserve(), GenNIR(genNirSettings))
   }

@@ -109,8 +109,8 @@ trait Transform {
       Op.Varload(onVal(elem))
     case Op.Varstore(elem, value) =>
       Op.Varstore(onVal(elem), onVal(value))
-    case Op.Arrayalloc(ty, init) =>
-      Op.Arrayalloc(onType(ty), onVal(init))
+    case Op.Arrayalloc(ty, init, zoneHandle) =>
+      Op.Arrayalloc(onType(ty), onVal(init), onVal(zoneHandle))
     case Op.Arrayload(ty, arr, idx) =>
       Op.Arrayload(onType(ty), onVal(arr), onVal(idx))
     case Op.Arraystore(ty, arr, idx, value) =>
