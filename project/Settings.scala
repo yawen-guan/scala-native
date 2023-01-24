@@ -666,7 +666,17 @@ object Settings {
         val report = (fetchScalaSource / update).value
         lazy val lm = {
           import sbt.librarymanagement.ivy._
-          val ivyConfig = InlineIvyConfiguration().withLog(s.log)
+          val ivyConfig = InlineIvyConfiguration()
+            .withLog(s.log)
+            .withResolvers(
+              resolvers.value.toVector.union(
+                Vector(
+                  Resolver.defaultLocal,
+                  Resolver.mavenLocal,
+                  Resolver.DefaultMavenRepository
+                )
+              )
+            )
           IvyDependencyResolution(ivyConfig)
         }
         lazy val scalaLibSourcesJar = lm
