@@ -32,7 +32,7 @@ class Preserve extends PluginPhase {
   val phaseName = Preserve.name
   override def description: String = "preserve info for GenNIR phase"
 
-  def defn(using Context): Definitions = ctx.definitions
+  def defnNir(using Context): NirDefinitions = NirDefinitions.get
 
   override def transformApply(tree: Apply)(using Context): Tree = {
     val tpe = tree match {
@@ -58,7 +58,7 @@ class Preserve extends PluginPhase {
     val AnnotatedType(parent, annot) = tpe
     annot.tree match {
       case Apply(_, List(handle))
-          if annot.symbol == defn.NativeSafeZoneHandleAnnot.clssym =>
+          if annot.symbol == defnNir.SafeZoneHandleClass =>
         Some(handle)
       case _ =>
         parent match {

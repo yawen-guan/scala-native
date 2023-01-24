@@ -37,6 +37,8 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val ResolvedAtLinktimeType = requiredClassRef("scala.scalanative.unsafe.resolvedAtLinktime")
   @tu lazy val ExportedType = requiredClassRef("scala.scalanative.unsafe.exported")
   @tu lazy val ExportAccessorsType = requiredClassRef("scala.scalanative.unsafe.exportAccessors")
+  // TODO: use scala.scalanative.annotations.SafeZoneHandle instead.
+  @tu lazy val SafeZoneHandleType = requiredClassRef("scala.scalanative.safe.SafeZoneHandle")  
   def StubClass(using Context) = StubType.symbol.asClass
   def NameClass(using Context) = NameType.symbol.asClass
   def LinkClass(using Context) = LinkType.symbol.asClass
@@ -45,6 +47,7 @@ final class NirDefinitions()(using ctx: Context) {
   def ResolvedAtLinktimeClass(using Context) = ResolvedAtLinktimeType.symbol.asClass
   def ExportedClass(using Context) = ExportedType.symbol.asClass
   def ExportAccessorsClass(using Context) = ExportAccessorsType.symbol.asClass
+  def SafeZoneHandleClass(using Context) = SafeZoneHandleType.symbol.asClass
 
   // Unsigned types
   @tu lazy val UByteClassVal = requiredClassRef("scala.scalanative.unsigned.UByte")
