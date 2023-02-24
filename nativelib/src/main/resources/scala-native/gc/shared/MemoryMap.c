@@ -1,5 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include "MemoryMap.h"
 
 #ifdef _WIN32
@@ -36,11 +34,6 @@
 #define HEAP_MEM_FD_OFFSET 0
 #endif // Unix
 
-void exitWithFailToMapMemory() {
-    fprintf(stderr, "Fail to map memory.\n");
-    exit(1);
-}
-
 word_t *memoryMap(size_t memorySize) {
 #ifdef _WIN32
     // On Windows only reserve given chunk of memory. It should be explicitly
@@ -49,31 +42,16 @@ word_t *memoryMap(size_t memorySize) {
     // supports only 32-bit address space and is in most cases not recommended.
     return VirtualAlloc(NULL, memorySize, MEM_RESERVE, PAGE_NOACCESS);
 #else // Unix
-    word_t *ret = mmap(NULL, memorySize, HEAP_MEM_PROT, HEAP_MEM_FLAGS,
-                       HEAP_MEM_FD, HEAP_MEM_FD_OFFSET);
-    if (ret == MAP_FAILED) {
-        exitWithFailToMapMemory();
-    }
-    return ret;
+    return mmap(NULL, memorySize, HEAP_MEM_PROT, HEAP_MEM_FLAGS, HEAP_MEM_FD,
+                HEAP_MEM_FD_OFFSET);
 #endif
-}
-
-void exitWithFailToUnmapMemory() {
-    fprintf(stderr, "Fail to unmap memory.\n");
-    exit(1);
 }
 
 void memoryUnmap(void *address, size_t memorySize) {
 #ifdef _WIN32
-    bool succeeded = VirtualFree(address, memorySize, MEM_RELEASE);
-    if (!succeeded) {
-        exitWithFailToUnmapMemory();
-    }
+    return VirtualFree(address, memorySize, MEM_RELEASE);
 #else // Unix
-    int ret = munmap(address, memorySize);
-    if (ret != 0) {
-        exitWithFailToUnmapMemory();
-    }
+    return munmap(address, memorySize);
 #endif
 }
 
@@ -104,4 +82,42 @@ bool memoryCommit(void *ref, size_t memorySize) {
     // No need for committing on UNIX
     return true;
 #endif
+
+#include <stdio.h>
+
+void exitWithOutOfMemory() {
+    fprintf(stderr, "Out of heap space\n");
+    exit(1);
+}
+
+word_t *memoryMapWithErrorHandling(size_t memorySize) {
+    void *memory = memoryMap(size);
+    if(memory == NULL) {
+        exitWithOutOfMemory()
+    }
+#ifdef _WIN32
+    if (!memoryCommit(memory, memorySize)) {
+        exitWithOutOfMemory();
+    };
+#endif // _WIN32
+}
+
+void exitWithFailToUnmapMemory() {
+    fprintf(stderr, "Fail to unmap memory.\n");
+    exit(1);
+}
+
+void memoryUnmapWithErrorHanding(void *address, size_t memorySize) {
+#ifdef _WIN32
+    bool succeeded = memoryUnmap(address, memorySize)
+    if (!succeeded) {
+        exitWithFailToUnmapMemory();
+    }
+#else // Unix
+    int ret = memoryUnmap(address, memorySize)
+    if (ret != 0) {
+        exitWithFailToUnmapMemory();
+    }
+#endif
+}
 }

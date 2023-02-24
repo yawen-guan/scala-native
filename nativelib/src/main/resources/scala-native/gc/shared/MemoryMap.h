@@ -12,4 +12,8 @@ word_t *memoryMapPrealloc(size_t memorySize, size_t doPrealloc);
 
 void memoryUnmap(void *address, size_t memorySize);
 
+word_t *memoryMapWithErrorHandling(size_t memorySize);
+
+void memoryUnmapWithErrorHandling(void *address, size_t memorySize);
+
 #endif // MEMORYMAP_H
